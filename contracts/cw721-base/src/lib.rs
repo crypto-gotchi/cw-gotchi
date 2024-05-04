@@ -7,7 +7,7 @@ pub mod state;
 pub mod upgrades;
 
 #[cfg(not(target_arch = "wasm32"))]
-mod interface;
+pub mod interface;
 
 #[cfg(test)]
 mod contract_tests;
