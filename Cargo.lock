@@ -598,6 +598,7 @@ version = "0.18.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
+ "cw-orch",
  "cw-storage-plus",
  "cw2",
  "cw721",
