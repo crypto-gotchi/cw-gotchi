@@ -4,7 +4,6 @@ pub mod helpers;
 pub mod msg;
 mod query;
 pub mod state;
-pub mod upgrades;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub mod interface;
@@ -88,8 +87,7 @@ pub mod entry {
         // update contract version
         cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-        // perform the upgrade
-        upgrades::v0_17::migrate::<Extension, Empty, Empty, Empty>(deps)
+        Ok(Response::new())
     }
 }
 
