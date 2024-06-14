@@ -593,6 +593,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "cw721-newtmagotchi"
+version = "0.18.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus",
+ "cw2",
+ "cw721",
+ "cw721-base",
+ "schemars",
+ "serde",
+]
+
+[[package]]
 name = "cw721-non-transferable"
 version = "0.18.0"
 dependencies = [
