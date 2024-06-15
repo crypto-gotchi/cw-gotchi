@@ -599,11 +599,13 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus",
+ "cw-utils",
  "cw2",
  "cw721",
  "cw721-base",
  "schemars",
  "serde",
+ "thiserror",
 ]
 
 [[package]]

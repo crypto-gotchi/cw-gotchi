@@ -1,9 +1,10 @@
-use std::time::Duration;
-
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Coin;
 use cw721::Expiration;
 use cw_storage_plus::{Item, Map};
+use cw_utils::Duration;
+
+pub const ONE_DAY: Duration = Duration::Time(24 * 60 * 60);
 
 pub const LAST_FEDING_EVENTS: Map<String, Expiration> = Map::new("last_feding_events");
 pub const BIRTHDAYS: Map<String, Expiration> = Map::new("birthdays");

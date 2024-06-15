@@ -1,7 +1,9 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Empty;
-pub use cw721_base::{ContractError, InstantiateMsg, MinterResponse};
+pub use cw721_base::{InstantiateMsg, MinterResponse};
 use msg::{MagotchiExecuteExtension, MagotchiQueryExtension};
+pub mod error;
+pub mod execute;
 pub mod msg;
 pub mod state;
 
@@ -44,11 +46,18 @@ pub type ExecuteMsg = cw721_base::ExecuteMsg<Extension, MagotchiExecuteExtension
 pub type QueryMsg = cw721_base::QueryMsg<MagotchiQueryExtension>;
 
 pub mod entry {
+    use std::borrow::BorrowMut;
+
     use super::*;
 
     #[cfg(not(feature = "library"))]
     use cosmwasm_std::entry_point;
     use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+    use error::ContractError;
+    use execute::{
+        check_hachable, check_if_alive, execute_feed, execute_hatch, feed, register_birthday,
+        set_first_last_fed_event,
+    };
 
     // This makes a conscious choice on the various generics used by the contract
     #[cfg_attr(not(feature = "library"), entry_point)]
@@ -60,12 +69,14 @@ pub mod entry {
     ) -> Result<Response, ContractError> {
         cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-        Cw721MetadataContract::default().instantiate(deps.branch(), env, info, msg)
+        Cw721MetadataContract::default()
+            .instantiate(deps.branch(), env, info, msg)
+            .map_err(ContractError::from)
     }
 
     #[cfg_attr(not(feature = "library"), entry_point)]
     pub fn execute(
-        deps: DepsMut,
+        mut deps: DepsMut,
         env: Env,
         info: MessageInfo,
         msg: ExecuteMsg,
@@ -74,14 +85,10 @@ pub mod entry {
             ExecuteMsg::Extension { msg } => {
                 match msg {
                     MagotchiExecuteExtension::Feed { token_id } => {
-                        // implement feeding logic here
-                        // TODO: Implement this
-                        todo!()
+                        execute_feed(&mut deps, &env, &token_id, &info.funds)
                     }
                     MagotchiExecuteExtension::Hatch { token_id } => {
-                        // implement hatching logic here
-                        // TODO: Implement this
-                        todo!()
+                        execute_hatch(&mut deps, &env, &token_id)
                     }
                     MagotchiExecuteExtension::Reap { tokens } => {
                         // implement reaping logic here
@@ -92,15 +99,20 @@ pub mod entry {
             }
             ExecuteMsg::Mint {
                 token_id,
-                owner,
-                token_uri,
-                extension,
+                owner: _,
+                token_uri: _,
+                extension: _,
             } => {
                 // Register birthday
                 // TODO: Implement this
-                Cw721MetadataContract::default().execute(deps, env, info, msg)
+                register_birthday(deps.borrow_mut(), &env, &token_id)?;
+                Cw721MetadataContract::default()
+                    .execute(deps, env, info, msg)
+                    .map_err(ContractError::from)
             }
-            _ => Cw721MetadataContract::default().execute(deps, env, info, msg),
+            _ => Cw721MetadataContract::default()
+                .execute(deps, env, info, msg)
+                .map_err(ContractError::from),
         }
     }
 
