@@ -83,7 +83,7 @@ pub mod entry {
                         // TODO: Implement this
                         todo!()
                     }
-                    MagotchiExecuteExtension::Reap {} => {
+                    MagotchiExecuteExtension::Reap { tokens } => {
                         // implement reaping logic here
                         // TODO: Implement this
                         todo!()
@@ -111,6 +111,7 @@ pub mod entry {
                 MagotchiQueryExtension::Health { token_id } => todo!(),
                 MagotchiQueryExtension::Age { token_id } => todo!(),
                 MagotchiQueryExtension::FeedingCost { token_id } => todo!(),
+                MagotchiQueryExtension::Config {} => todo!(),
             },
             _ => Cw721MetadataContract::default().query(deps, env, msg),
         }

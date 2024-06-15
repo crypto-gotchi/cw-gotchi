@@ -1,5 +1,5 @@
 {
-  "contract_name": "cw721-metadata-onchain",
+  "contract_name": "cw721-newtmagotchi",
   "contract_version": "0.18.0",
   "idl_version": "1.0.0",
   "instantiate": {
@@ -294,7 +294,7 @@
             ],
             "properties": {
               "msg": {
-                "$ref": "#/definitions/Empty"
+                "$ref": "#/definitions/MagotchiExecuteExtension"
               }
             },
             "additionalProperties": false
@@ -445,10 +445,6 @@
           }
         }
       },
-      "Empty": {
-        "description": "An empty struct that serves as a placeholder in different places, such as contracts that don't set a custom message.\n\nIt is designed to be expressable in correct JSON and JSON Schema but contains no meaningful data. Previously we used enums without cases, but those cannot represented as valid JSON Schema (https://github.com/CosmWasm/cosmwasm/issues/451)",
-        "type": "object"
-      },
       "Expiration": {
         "description": "Expiration represents a point in time when some event happens. It can compare with a BlockInfo and will return is_expired() == true once the condition is hit (and for every block in the future)",
         "oneOf": [
@@ -489,6 +485,79 @@
             "properties": {
               "never": {
                 "type": "object",
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "MagotchiExecuteExtension": {
+        "oneOf": [
+          {
+            "description": "Hatch a new magotchi, you need to feed it from now on",
+            "type": "object",
+            "required": [
+              "hatch"
+            ],
+            "properties": {
+              "hatch": {
+                "type": "object",
+                "required": [
+                  "token_id"
+                ],
+                "properties": {
+                  "token_id": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Feed the magotchi, resetting its health",
+            "type": "object",
+            "required": [
+              "feed"
+            ],
+            "properties": {
+              "feed": {
+                "type": "object",
+                "required": [
+                  "token_id"
+                ],
+                "properties": {
+                  "token_id": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Reap all dead magotchis, sending it to the graveyard. If option tokens is provided, only those tokens will be reaped, otherwise all dead tokens will be reaped (might fail if there are too many dead tokens to reap in one go)",
+            "type": "object",
+            "required": [
+              "reap"
+            ],
+            "properties": {
+              "reap": {
+                "type": "object",
+                "properties": {
+                  "tokens": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
                 "additionalProperties": false
               }
             },
@@ -940,7 +1009,7 @@
             ],
             "properties": {
               "msg": {
-                "$ref": "#/definitions/Empty"
+                "$ref": "#/definitions/MagotchiQueryExtension"
               }
             },
             "additionalProperties": false
@@ -977,9 +1046,89 @@
       }
     ],
     "definitions": {
-      "Empty": {
-        "description": "An empty struct that serves as a placeholder in different places, such as contracts that don't set a custom message.\n\nIt is designed to be expressable in correct JSON and JSON Schema but contains no meaningful data. Previously we used enums without cases, but those cannot represented as valid JSON Schema (https://github.com/CosmWasm/cosmwasm/issues/451)",
-        "type": "object"
+      "MagotchiQueryExtension": {
+        "oneOf": [
+          {
+            "description": "Returns the health of the magotchi",
+            "type": "object",
+            "required": [
+              "health"
+            ],
+            "properties": {
+              "health": {
+                "type": "object",
+                "required": [
+                  "token_id"
+                ],
+                "properties": {
+                  "token_id": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Returns the age of the magotchi in days",
+            "type": "object",
+            "required": [
+              "age"
+            ],
+            "properties": {
+              "age": {
+                "type": "object",
+                "required": [
+                  "token_id"
+                ],
+                "properties": {
+                  "token_id": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Returns the cost of feeding the magotchi",
+            "type": "object",
+            "required": [
+              "feeding_cost"
+            ],
+            "properties": {
+              "feeding_cost": {
+                "type": "object",
+                "required": [
+                  "token_id"
+                ],
+                "properties": {
+                  "token_id": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Returns the Config of the contract, including the daily feeding cost, the maximum days without food and the day length",
+            "type": "object",
+            "required": [
+              "config"
+            ],
+            "properties": {
+              "config": {
+                "type": "object",
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
       }
     }
   },
@@ -988,7 +1137,7 @@
   "responses": {
     "all_nft_info": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "AllNftInfoResponse_for_Empty",
+      "title": "AllNftInfoResponse_for_MagotchiQueryExtension",
       "type": "object",
       "required": [
         "access",
@@ -1007,7 +1156,7 @@
           "description": "Data on the token itself,",
           "allOf": [
             {
-              "$ref": "#/definitions/NftInfoResponse_for_Empty"
+              "$ref": "#/definitions/NftInfoResponse_for_MagotchiQueryExtension"
             }
           ]
         }
@@ -1035,10 +1184,6 @@
             }
           },
           "additionalProperties": false
-        },
-        "Empty": {
-          "description": "An empty struct that serves as a placeholder in different places, such as contracts that don't set a custom message.\n\nIt is designed to be expressable in correct JSON and JSON Schema but contains no meaningful data. Previously we used enums without cases, but those cannot represented as valid JSON Schema (https://github.com/CosmWasm/cosmwasm/issues/451)",
-          "type": "object"
         },
         "Expiration": {
           "description": "Expiration represents a point in time when some event happens. It can compare with a BlockInfo and will return is_expired() == true once the condition is hit (and for every block in the future)",
@@ -1087,7 +1232,91 @@
             }
           ]
         },
-        "NftInfoResponse_for_Empty": {
+        "MagotchiQueryExtension": {
+          "oneOf": [
+            {
+              "description": "Returns the health of the magotchi",
+              "type": "object",
+              "required": [
+                "health"
+              ],
+              "properties": {
+                "health": {
+                  "type": "object",
+                  "required": [
+                    "token_id"
+                  ],
+                  "properties": {
+                    "token_id": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "description": "Returns the age of the magotchi in days",
+              "type": "object",
+              "required": [
+                "age"
+              ],
+              "properties": {
+                "age": {
+                  "type": "object",
+                  "required": [
+                    "token_id"
+                  ],
+                  "properties": {
+                    "token_id": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "description": "Returns the cost of feeding the magotchi",
+              "type": "object",
+              "required": [
+                "feeding_cost"
+              ],
+              "properties": {
+                "feeding_cost": {
+                  "type": "object",
+                  "required": [
+                    "token_id"
+                  ],
+                  "properties": {
+                    "token_id": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "description": "Returns the Config of the contract, including the daily feeding cost, the maximum days without food and the day length",
+              "type": "object",
+              "required": [
+                "config"
+              ],
+              "properties": {
+                "config": {
+                  "type": "object",
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "NftInfoResponse_for_MagotchiQueryExtension": {
           "type": "object",
           "required": [
             "extension"
@@ -1097,7 +1326,7 @@
               "description": "You can add any custom metadata here when you extend cw721-base",
               "allOf": [
                 {
-                  "$ref": "#/definitions/Empty"
+                  "$ref": "#/definitions/MagotchiQueryExtension"
                 }
               ]
             },
@@ -1509,7 +1738,7 @@
     },
     "nft_info": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "NftInfoResponse_for_Empty",
+      "title": "NftInfoResponse_for_MagotchiQueryExtension",
       "type": "object",
       "required": [
         "extension"
@@ -1519,7 +1748,7 @@
           "description": "You can add any custom metadata here when you extend cw721-base",
           "allOf": [
             {
-              "$ref": "#/definitions/Empty"
+              "$ref": "#/definitions/MagotchiQueryExtension"
             }
           ]
         },
@@ -1533,9 +1762,89 @@
       },
       "additionalProperties": false,
       "definitions": {
-        "Empty": {
-          "description": "An empty struct that serves as a placeholder in different places, such as contracts that don't set a custom message.\n\nIt is designed to be expressable in correct JSON and JSON Schema but contains no meaningful data. Previously we used enums without cases, but those cannot represented as valid JSON Schema (https://github.com/CosmWasm/cosmwasm/issues/451)",
-          "type": "object"
+        "MagotchiQueryExtension": {
+          "oneOf": [
+            {
+              "description": "Returns the health of the magotchi",
+              "type": "object",
+              "required": [
+                "health"
+              ],
+              "properties": {
+                "health": {
+                  "type": "object",
+                  "required": [
+                    "token_id"
+                  ],
+                  "properties": {
+                    "token_id": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "description": "Returns the age of the magotchi in days",
+              "type": "object",
+              "required": [
+                "age"
+              ],
+              "properties": {
+                "age": {
+                  "type": "object",
+                  "required": [
+                    "token_id"
+                  ],
+                  "properties": {
+                    "token_id": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "description": "Returns the cost of feeding the magotchi",
+              "type": "object",
+              "required": [
+                "feeding_cost"
+              ],
+              "properties": {
+                "feeding_cost": {
+                  "type": "object",
+                  "required": [
+                    "token_id"
+                  ],
+                  "properties": {
+                    "token_id": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "description": "Returns the Config of the contract, including the daily feeding cost, the maximum days without food and the day length",
+              "type": "object",
+              "required": [
+                "config"
+              ],
+              "properties": {
+                "config": {
+                  "type": "object",
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
         }
       }
     },
