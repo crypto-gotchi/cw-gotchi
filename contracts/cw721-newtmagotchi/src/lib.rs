@@ -54,10 +54,7 @@ pub mod entry {
     use cosmwasm_std::entry_point;
     use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
     use error::ContractError;
-    use execute::{
-        check_hachable, check_if_alive, execute_feed, execute_hatch, feed, register_birthday,
-        set_first_last_fed_event,
-    };
+    use execute::{execute_feed, execute_hatch, execute_reap, register_birthday};
 
     // This makes a conscious choice on the various generics used by the contract
     #[cfg_attr(not(feature = "library"), entry_point)]
@@ -82,21 +79,15 @@ pub mod entry {
         msg: ExecuteMsg,
     ) -> Result<Response, ContractError> {
         match msg.clone() {
-            ExecuteMsg::Extension { msg } => {
-                match msg {
-                    MagotchiExecuteExtension::Feed { token_id } => {
-                        execute_feed(&mut deps, &env, &token_id, &info.funds)
-                    }
-                    MagotchiExecuteExtension::Hatch { token_id } => {
-                        execute_hatch(&mut deps, &env, &token_id)
-                    }
-                    MagotchiExecuteExtension::Reap { tokens } => {
-                        // implement reaping logic here
-                        // TODO: Implement this
-                        todo!()
-                    }
+            ExecuteMsg::Extension { msg } => match msg {
+                MagotchiExecuteExtension::Feed { token_id } => {
+                    execute_feed(&mut deps, &env, &token_id, &info.funds)
                 }
-            }
+                MagotchiExecuteExtension::Hatch { token_id } => {
+                    execute_hatch(&mut deps, &env, &token_id)
+                }
+                MagotchiExecuteExtension::Reap { tokens } => execute_reap(&mut deps, tokens, &env),
+            },
             ExecuteMsg::Mint {
                 token_id,
                 owner: _,

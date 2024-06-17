@@ -1,4 +1,4 @@
-use cosmwasm_std::{Coin, Deps, DepsMut, Empty, Env, Response};
+use cosmwasm_std::{Coin, Deps, DepsMut, Empty, Env, Order, Response, StdResult};
 use cw721::Expiration;
 use cw721_base::error::ContractError as Cw721ContractError;
 use cw_utils::Duration;
@@ -6,6 +6,7 @@ use cw_utils::Duration;
 use crate::{
     error::ContractError,
     state::{BIRTHDAYS, CONFIG, LAST_FEDING_EVENTS, ONE_DAY},
+    Cw721MetadataContract, Metadata,
 };
 
 pub fn register_birthday(
@@ -27,20 +28,39 @@ pub fn feed(deps: &mut DepsMut, token_id: &str, funds: &Vec<Coin>) -> Result<(),
     Ok(())
 }
 
-pub fn check_if_alive(deps: &Deps, env: &Env, token_id: &str) -> Result<(), ContractError> {
+pub fn check_if_alive(
+    deps: &Deps,
+    env: &Env,
+    token_id: &str,
+    max_days_without_food: u64,
+) -> Result<(), ContractError> {
     // implement checking if the magotchi is alive here
-    let last_fed_at = LAST_FEDING_EVENTS
-        .may_load(deps.storage, token_id.to_string())?
-        .ok_or(ContractError::MagotchiUnhatched {})?;
-
-    let config = CONFIG.load(deps.storage)?;
-
-    let dying_day = last_fed_at + ONE_DAY * config.max_days_without_food as u64;
-    if dying_day?.is_expired(&env.block) {
+    let dying_day = get_dying_day(deps, token_id, max_days_without_food)?;
+    if dying_day.is_expired(&env.block) {
         return Err(ContractError::MagotchiDied {});
     }
 
     Ok(())
+}
+
+pub fn get_dying_day(
+    deps: &Deps<Empty>,
+    token_id: &str,
+    max_days_without_food: u64,
+) -> Result<Expiration, ContractError> {
+    let last_fed_at = LAST_FEDING_EVENTS
+        .may_load(deps.storage, token_id.to_string())?
+        .ok_or(ContractError::MagotchiUnhatched {})?;
+
+    let dying_day = calculate_dying_day(last_fed_at, max_days_without_food as u64)?;
+    Ok(dying_day)
+}
+
+fn calculate_dying_day(
+    last_fed_at: Expiration,
+    max_days_without_food: u64,
+) -> StdResult<Expiration> {
+    last_fed_at + ONE_DAY * max_days_without_food
 }
 
 pub fn execute_feed(
@@ -49,7 +69,13 @@ pub fn execute_feed(
     token_id: &str,
     funds: &Vec<Coin>,
 ) -> Result<Response, ContractError> {
-    check_if_alive(&deps.as_ref(), &env, &token_id)?;
+    let config = CONFIG.load(deps.as_ref().storage)?;
+    check_if_alive(
+        &deps.as_ref(),
+        &env,
+        &token_id,
+        config.max_days_without_food.into(),
+    )?;
     feed(deps, &token_id, &funds)?;
 
     Ok(Response::default().add_attributes(vec![("action", "feed"), ("token_id", token_id)]))
@@ -85,5 +111,41 @@ pub fn execute_hatch(
         ("action", "hatch"),
         ("token_id", token_id),
         ("last_fed_at", &last_fed_event.to_string()),
+    ]))
+}
+
+pub fn execute_reap(
+    deps: &mut DepsMut<Empty>,
+    tokens: Option<Vec<String>>,
+    env: &Env,
+) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.as_ref().storage)?;
+    let tokens = match tokens {
+        Some(tokens) => tokens,
+        None => Cw721MetadataContract::default()
+            .tokens
+            .keys(deps.storage, None, None, Order::Ascending)
+            .collect::<StdResult<Vec<String>>>()?,
+    };
+    let mut harverst = Vec::new();
+    for token_id in tokens {
+        let contract = Cw721MetadataContract::default();
+        let dying_day = get_dying_day(
+            &deps.as_ref(),
+            &token_id,
+            config.max_days_without_food.into(),
+        )?;
+        if dying_day.is_expired(&env.block) {
+            // transfer the token to the graveyard
+            let mut token: cw721_base::state::TokenInfo<Option<Metadata>> =
+                contract.tokens.load(deps.storage, &token_id)?;
+            token.owner = config.graveyard.clone();
+            contract.tokens.save(deps.storage, &token_id, &token)?;
+            harverst.push(token_id);
+        }
+    }
+    Ok(Response::default().add_attributes(vec![
+        ("action", "reap"),
+        ("tokens", harverst.join(",").as_str()),
     ]))
 }

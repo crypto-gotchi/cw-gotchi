@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::Coin;
+use cosmwasm_std::{Addr, Coin};
 use cw721::Expiration;
 use cw_storage_plus::{Item, Map};
 use cw_utils::Duration;
@@ -20,4 +20,6 @@ pub struct Config {
     pub day_length: Duration,
     /// the multiplier of the feeding cost per day in promille
     pub feeding_cost_multiplier: u64,
+    /// the cost of hatching a magotchi
+    pub graveyard: Addr,
 }
