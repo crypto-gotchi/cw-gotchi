@@ -5,6 +5,7 @@ use msg::{MagotchiExecuteExtension, MagotchiQueryExtension};
 pub mod error;
 pub mod execute;
 pub mod msg;
+pub mod query;
 pub mod state;
 
 // Version info for migration
@@ -54,7 +55,8 @@ pub mod entry {
     use cosmwasm_std::entry_point;
     use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
     use error::ContractError;
-    use execute::{execute_feed, execute_hatch, execute_reap, register_birthday};
+    use execute::{execute_feed, execute_hatch, execute_reap};
+    use state::{LiveState, LIVE_STATES};
 
     // This makes a conscious choice on the various generics used by the contract
     #[cfg_attr(not(feature = "library"), entry_point)]
@@ -94,9 +96,7 @@ pub mod entry {
                 token_uri: _,
                 extension: _,
             } => {
-                // Register birthday
-                // TODO: Implement this
-                register_birthday(deps.borrow_mut(), &env, &token_id)?;
+                LIVE_STATES.save(deps.storage, token_id.to_string(), &LiveState::new());
                 Cw721MetadataContract::default()
                     .execute(deps, env, info, msg)
                     .map_err(ContractError::from)
