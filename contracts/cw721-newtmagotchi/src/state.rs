@@ -49,7 +49,7 @@ impl LiveState {
             return Err(ContractError::MagotchiDied {});
         }
 
-        self.dying_day = block.time.plus_seconds(max_days_without_food);
+        self.dying_day = block.time.plus_days(max_days_without_food);
         Ok(self.to_owned())
     }
 
@@ -70,6 +70,14 @@ impl LiveState {
             return max_days_without_food;
         }
 
+        print!(
+            "one day: {:}, days from epoch till dead: {:}, dying_day: {:?}, block_time: {:?}, diff: {:?}",
+            Timestamp::default().plus_days(1),
+            Timestamp::default().plus_seconds(self.dying_day.seconds()).seconds() /24 / 60 / 60,
+            self.dying_day,
+            block.time,
+            self.dying_day.seconds() - Timestamp::default().plus_days(max_days_without_food).seconds()
+        );
         let seconds_unfed =
             self.dying_day.minus_days(max_days_without_food).seconds() - block.time.seconds();
 
@@ -121,8 +129,8 @@ impl Config {
 }
 
 #[cfg(test)]
-impl Config {
-    pub fn new() -> Self {
+impl Default for Config {
+    fn default() -> Self {
         Self {
             daily_feeding_cost: vec![Coin::new(1_000_000, "unewt")],
             max_days_without_food: 10,
@@ -140,6 +148,13 @@ impl LiveState {
             dying_day: Timestamp::from_nanos(u64::MAX),
         }
     }
+
+    pub fn with_birthday(days_since_epoch: u64) -> Self {
+        Self {
+            birthday: Some(Timestamp::default().plus_days(days_since_epoch)),
+            dying_day: Timestamp::default().plus_days(days_since_epoch + 1),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -147,9 +162,10 @@ mod tests {
     use super::*;
     use speculoos::prelude::*;
 
-    fn mock_block(s_since_epoch: u64) -> BlockInfo {
+    const ONE_DAY: u64 = 24 * 60 * 60;
+    fn mock_block(days_since_epoch: u64) -> BlockInfo {
         BlockInfo {
-            time: Timestamp::from_seconds(s_since_epoch),
+            time: Timestamp::from_seconds(ONE_DAY * days_since_epoch),
             height: 0,
             chain_id: "neutron-1".to_owned(),
         }
@@ -224,6 +240,55 @@ mod tests {
             state.dying_day = Timestamp::from_seconds(0);
             assert_that(&state.dying_day()).is_equal_to(Timestamp::from_seconds(0));
         }
+
+        #[test]
+        fn days_unfed_while_dead() {
+            let state = LiveState::new();
+            let block = mock_block(0);
+
+            assert_that(&state.days_unfed(&block, 1)).is_equal_to(0);
+
+            let mut state = LiveState::new();
+            state = state.hatch(&block).unwrap();
+            assert_that(&state.days_unfed(&block, 1)).is_equal_to(0);
+
+            // max_days_without_food = 1
+            let block = mock_block(1);
+            assert_that(&state.days_unfed(&block, 1)).is_equal_to(1);
+
+            let block = mock_block(200);
+            assert_that!(state.is_dead(&block)).is_true();
+            assert_that(&state.days_unfed(&block, 1)).is_equal_to(1);
+
+            // max_days_without_food = 10
+            let block = mock_block(11);
+            assert_that!(state.is_dead(&block)).is_true();
+            assert_that(&state.days_unfed(&block, 10)).is_equal_to(10);
+
+            let block = mock_block(2000);
+            assert_that!(state.is_dead(&block)).is_true();
+            assert_that(&state.days_unfed(&block, 10)).is_equal_to(10);
+        }
+
+        fn days_unfed_while_alive() {
+            let state = LiveState::new();
+            let block = mock_block(0);
+
+            // unhatched
+            assert_that(&state.days_unfed(&block, 1)).is_equal_to(0);
+
+            let mut state = LiveState::with_birthday(10);
+            let block = mock_block(10);
+            assert_that!(state.is_dead(&block)).is_false();
+            assert_that(&state.days_unfed(&block, 1)).is_equal_to(1);
+
+            let block = mock_block(11);
+            assert_that!(state.is_dead(&block)).is_true();
+            assert_that!(state.days_unfed(&block, 1)).is_equal_to(1);
+
+            let block = mock_block(200);
+            let state = LiveState::with_birthday(200);
+        }
     }
 
     mod config {
@@ -231,19 +296,16 @@ mod tests {
 
         #[test]
         fn get_feeding_cost() {
-            let config = Config {
-                daily_feeding_cost: vec![Coin::new(1_000_000, "unewt")],
-                max_days_without_food: 10,
-                feeding_cost_multiplier: 2,
-                graveyard: Addr::unchecked("graveyard"),
-            };
+            let config = Config::default();
+            let mut state = LiveState::new();
+            let block = mock_block(10);
 
-            let state = LiveState::new();
-            let block = mock_block(0);
+            // results in dying_day = 10 + 1 = 11
+            state = state.hatch(&block).unwrap();
 
             assert_that(&config.get_feeding_cost(&state, &block)).is_equal_to(1);
 
-            let block = mock_block(1);
+            let block = mock_block(11);
             assert_that(&config.get_feeding_cost(&state, &block)).is_equal_to(2);
         }
 
