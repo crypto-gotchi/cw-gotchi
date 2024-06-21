@@ -1,8 +1,7 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, BlockInfo, Coin, Deps, StdResult, Timestamp, Uint128};
+use cosmwasm_std::{Addr, BlockInfo, Coin, Timestamp, Uint128};
 use cw721::Expiration;
 use cw_storage_plus::{Item, Map};
-use cw_utils::Duration;
 
 use crate::error::{CResult, ContractError};
 
@@ -54,6 +53,14 @@ impl LiveState {
         Ok(self.to_owned())
     }
 
+    pub fn birthday(&self) -> Option<Timestamp> {
+        self.birthday
+    }
+
+    pub fn dying_day(&self) -> Timestamp {
+        self.dying_day
+    }
+
     pub fn days_unfed(&self, block: &BlockInfo, max_days_without_food: u64) -> u64 {
         if !self.is_hatched() {
             return 0;
@@ -83,14 +90,14 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn get_feeding_cost(&self, state: LiveState, block: &BlockInfo) -> u64 {
+    pub fn get_feeding_cost(&self, state: &LiveState, block: &BlockInfo) -> u64 {
         let days_unfed = state.days_unfed(block, self.max_days_without_food as u64);
         return self.feeding_cost_multiplier.pow(days_unfed as u32);
     }
 
     pub fn get_total_feeding_cost(
         &self,
-        state: LiveState,
+        state: &LiveState,
         block: &BlockInfo,
         denom: &str,
     ) -> CResult<Coin> {
@@ -110,5 +117,161 @@ impl Config {
             denom: denom.to_string(),
             amount: feeding_price,
         })
+    }
+}
+
+#[cfg(test)]
+impl Config {
+    pub fn new() -> Self {
+        Self {
+            daily_feeding_cost: vec![Coin::new(1_000_000, "unewt")],
+            max_days_without_food: 10,
+            feeding_cost_multiplier: 1,
+            graveyard: Addr::unchecked("graveyard"),
+        }
+    }
+}
+
+#[cfg(test)]
+impl LiveState {
+    pub fn default() -> Self {
+        Self {
+            birthday: None,
+            dying_day: Timestamp::from_nanos(u64::MAX),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use speculoos::prelude::*;
+
+    fn mock_block(s_since_epoch: u64) -> BlockInfo {
+        BlockInfo {
+            time: Timestamp::from_seconds(s_since_epoch),
+            height: 0,
+            chain_id: "neutron-1".to_owned(),
+        }
+    }
+
+    mod live_state {
+        use super::*;
+
+        #[test]
+        fn is_dead() {
+            let mut state = LiveState::new();
+            let block = mock_block(0);
+
+            assert_that(&state.is_dead(&block)).is_false();
+
+            state.dying_day = Timestamp::from_seconds(1);
+            assert_that(&state.is_dead(&block)).is_false();
+
+            state.dying_day = Timestamp::from_seconds(0);
+            assert_that(&state.is_dead(&block)).is_true();
+        }
+
+        #[test]
+        fn is_hatched() {
+            let state = LiveState::new();
+            assert_that(&state.is_hatched()).is_false();
+
+            let mut state = LiveState::new();
+            state.birthday = Some(Timestamp::from_seconds(0));
+            assert_that(&state.is_hatched()).is_true();
+        }
+
+        #[test]
+        fn hatch() {
+            let mut state = LiveState::new();
+            let block = mock_block(0);
+
+            assert_that(&state.hatch(&block)).is_err();
+            assert_that(&state.hatch(&block)).is_err();
+        }
+
+        #[test]
+        fn feed() {
+            let mut state = LiveState::new();
+            let block = mock_block(0);
+
+            assert_that(&state.feed(&block, 1)).is_err();
+
+            state.hatch(&block).unwrap();
+            assert_that(&state.feed(&block, 1)).is_ok();
+            assert_that(&state.feed(&block, 1)).is_err();
+        }
+
+        #[test]
+        fn birthday() {
+            let state = LiveState::new();
+            assert_that(&state.birthday()).is_none();
+
+            let mut state = LiveState::new();
+            state.birthday = Some(Timestamp::from_seconds(0));
+            assert_that(&state.birthday())
+                .is_some()
+                .is_equal_to(Timestamp::from_seconds(0));
+        }
+
+        #[test]
+        fn dying_day() {
+            let state = LiveState::new();
+            assert_that(&state.dying_day()).is_equal_to(Timestamp::from_nanos(u64::MAX));
+
+            let mut state = LiveState::new();
+            state.dying_day = Timestamp::from_seconds(0);
+            assert_that(&state.dying_day()).is_equal_to(Timestamp::from_seconds(0));
+        }
+    }
+
+    mod config {
+        use super::*;
+
+        #[test]
+        fn get_feeding_cost() {
+            let config = Config {
+                daily_feeding_cost: vec![Coin::new(1_000_000, "unewt")],
+                max_days_without_food: 10,
+                feeding_cost_multiplier: 2,
+                graveyard: Addr::unchecked("graveyard"),
+            };
+
+            let state = LiveState::new();
+            let block = mock_block(0);
+
+            assert_that(&config.get_feeding_cost(&state, &block)).is_equal_to(1);
+
+            let block = mock_block(1);
+            assert_that(&config.get_feeding_cost(&state, &block)).is_equal_to(2);
+        }
+
+        #[test]
+        fn get_total_feeding_cost() {
+            let config = Config {
+                daily_feeding_cost: vec![Coin::new(1_000_000, "unewt")],
+                max_days_without_food: 10,
+                feeding_cost_multiplier: 2,
+                graveyard: Addr::unchecked("graveyard"),
+            };
+
+            let state = LiveState::new();
+            let block = mock_block(0);
+
+            assert_that(
+                &config
+                    .get_total_feeding_cost(&state, &block, "unewt")
+                    .unwrap(),
+            )
+            .is_equal_to(Coin::new(1_000_000, "unewt"));
+
+            assert_that(
+                &config
+                    .get_total_feeding_cost(&state, &block, "utest")
+                    .is_err(),
+            )
+            .is_true();
+        }
     }
 }

@@ -47,16 +47,16 @@ pub type ExecuteMsg = cw721_base::ExecuteMsg<Extension, MagotchiExecuteExtension
 pub type QueryMsg = cw721_base::QueryMsg<MagotchiQueryExtension>;
 
 pub mod entry {
-    use std::borrow::BorrowMut;
 
     use super::*;
 
     #[cfg(not(feature = "library"))]
     use cosmwasm_std::entry_point;
-    use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+    use cosmwasm_std::{
+        to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+    };
     use error::ContractError;
-    use execute::{execute_feed, execute_hatch, execute_reap};
-    use state::{LiveState, LIVE_STATES};
+    use execute::{execute_feed, execute_hatch, execute_mint, execute_reap};
 
     // This makes a conscious choice on the various generics used by the contract
     #[cfg_attr(not(feature = "library"), entry_point)]
@@ -95,12 +95,7 @@ pub mod entry {
                 owner: _,
                 token_uri: _,
                 extension: _,
-            } => {
-                LIVE_STATES.save(deps.storage, token_id.to_string(), &LiveState::new());
-                Cw721MetadataContract::default()
-                    .execute(deps, env, info, msg)
-                    .map_err(ContractError::from)
-            }
+            } => execute_mint(deps, token_id, env, info, msg),
             _ => Cw721MetadataContract::default()
                 .execute(deps, env, info, msg)
                 .map_err(ContractError::from),
@@ -111,10 +106,25 @@ pub mod entry {
     pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         match msg {
             QueryMsg::Extension { msg } => match msg {
-                MagotchiQueryExtension::Health { token_id } => todo!(),
-                MagotchiQueryExtension::Age { token_id } => todo!(),
-                MagotchiQueryExtension::FeedingCost { token_id } => todo!(),
-                MagotchiQueryExtension::Config {} => todo!(),
+                MagotchiQueryExtension::Health { token_id } => {
+                    to_json_binary(&query::query_health(deps, env, token_id)?)
+                }
+                MagotchiQueryExtension::FeedingCost { token_id } => {
+                    to_json_binary(&query::query_feeding_cost(deps, env, token_id)?)
+                }
+                MagotchiQueryExtension::Config {} => to_json_binary(&query::query_config(deps)?),
+                MagotchiQueryExtension::Birthday { token_id } => {
+                    to_json_binary(&query::query_birthday(deps, token_id)?)
+                }
+                MagotchiQueryExtension::DyingDay { token_id } => {
+                    to_json_binary(&query::query_dying_day(deps, token_id)?)
+                }
+                MagotchiQueryExtension::IsHatched { token_id } => {
+                    to_json_binary(&query::query_is_hatched(deps, token_id)?)
+                }
+                MagotchiQueryExtension::LiveState { token_id } => {
+                    to_json_binary(&query::query_live_state(deps, token_id)?)
+                }
             },
             _ => Cw721MetadataContract::default().query(deps, env, msg),
         }

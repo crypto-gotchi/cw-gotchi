@@ -1,12 +1,8 @@
-use cosmwasm_std::{
-    BlockInfo, Coin, Deps, DepsMut, Empty, Env, Order, Response, StdError, StdResult, Timestamp,
-};
-use cw721::Expiration;
-use cw721_base::error::ContractError as Cw721ContractError;
-use cw_utils::Duration;
+use cosmwasm_std::{BlockInfo, Coin, Deps, DepsMut, Empty, Env, MessageInfo, Order, Response};
 
 use crate::{
-    error::ContractError,
+    error::{CResult, ContractError},
+    msg::MagotchiExecuteExtension,
     state::{LiveState, CONFIG, LIVE_STATES},
     Cw721MetadataContract, Metadata,
 };
@@ -36,7 +32,7 @@ pub fn execute_feed(
     let config = CONFIG.load(deps.as_ref().storage)?;
     let state = LIVE_STATES.load(deps.storage, token_id.to_string())?;
 
-    let total_feeding_cost = config.get_total_feeding_cost(state, &env.block, &funds[0].denom)?;
+    let total_feeding_cost = config.get_total_feeding_cost(&state, &env.block, &funds[0].denom)?;
 
     if paying_coin != total_feeding_cost {
         return Err(ContractError::InvalidFeedingCost {
@@ -79,37 +75,51 @@ pub fn execute_reap(
     let config = CONFIG.load(deps.as_ref().storage)?;
     let tokens = match tokens {
         Some(tokens) => tokens,
-        None => contract
-            .tokens
-            .keys(deps.storage, None, None, Order::Ascending)
-            .collect::<StdResult<Vec<String>>>()?,
-    }
+        None => get_all_dead(deps.as_ref(), &env.block),
+    };
 
-    let lives = tokens
-        .iter()
-        .map(|t| {
-            let state = LIVE_STATES.load(deps.storage, t.clone())?;
-            return Ok((t.clone(), state));
-        })
-        .collect::<StdResult<Vec<(String, LiveState)>>>()?;
+    tokens.iter().try_for_each(|token_id| -> CResult<()> {
+        let state = LIVE_STATES.load(deps.storage, token_id.clone())?;
 
-    if lives.iter().any(|(_, state)| state.is_dead(&env.block)) {
-        return Err(ContractError::MagotchiDied {});
-    }
+        // if any are not dead, we cannot reap
+        if !state.is_dead(&env.block) {
+            return Err(ContractError::NotAllDead {});
+        }
 
-    lives.iter().for_each(|(token_id, mut state)| {
         contract
             .tokens
-            .update(deps.storage, &token_id, |t| {
-                let mut token = t.unwrap();
-                token.owner = config.graveyard.clone();
-
-                Ok(token)
-            })
-            .map_err(ContractError::from);
-    });
+            .update(deps.storage, token_id, |t| match t {
+                Some(mut token) => {
+                    token.owner = config.graveyard.clone();
+                    Ok(token)
+                }
+                None => Err(ContractError::not_found()),
+            })?;
+        Ok(())
+    })?;
     Ok(Response::default().add_attributes(vec![
         ("action", "reap"),
         ("tokens", tokens.clone().join(",").as_str()),
     ]))
+}
+
+pub fn get_all_dead(deps: Deps, block: &BlockInfo) -> Vec<String> {
+    LIVE_STATES
+        .range(deps.storage, None, None, Order::Ascending)
+        .map(Result::unwrap)
+        .filter_map(|(token_id, state)| state.is_dead(block).then(|| token_id.to_string()))
+        .collect()
+}
+
+pub fn execute_mint(
+    deps: DepsMut,
+    token_id: String,
+    env: Env,
+    info: MessageInfo,
+    msg: cw721_base::ExecuteMsg<Option<Metadata>, MagotchiExecuteExtension>,
+) -> Result<Response, ContractError> {
+    LIVE_STATES.save(deps.storage, token_id.to_string(), &LiveState::new())?;
+    Cw721MetadataContract::default()
+        .execute(deps, env, info, msg)
+        .map_err(ContractError::from)
 }

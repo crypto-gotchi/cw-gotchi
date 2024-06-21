@@ -29,3 +29,7 @@ serde = { workspace = true }
 cw-storage-plus = { workspace = true }
 thiserror.workspace = true
 cw-utils.workspace = true
+
+[dev-dependencies]
+anyhow = "1.0.86"
+speculoos = "0.11.0"
