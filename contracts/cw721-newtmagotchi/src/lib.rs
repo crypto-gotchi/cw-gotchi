@@ -7,6 +7,7 @@ pub mod execute;
 pub mod msg;
 pub mod query;
 pub mod state;
+pub mod utils;
 
 // Version info for migration
 const CONTRACT_NAME: &str = "crates.io:cw721-newtmagotchi";
