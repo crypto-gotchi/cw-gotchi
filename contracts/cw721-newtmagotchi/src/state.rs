@@ -8,16 +8,16 @@ use crate::{
     utils::calculate_total_cost,
 };
 
-pub const LIVE_STATES: Map<String, LiveState> = Map::new("live_states");
+pub const LIVE_STATES: Map<String, Gotchi> = Map::new("live_states");
 pub const CONFIG: Item<Config> = Item::new("config");
 
 #[cw_serde]
-pub struct LiveState {
+pub struct Gotchi {
     hatched_at: Option<Timestamp>,
     death_time: Timestamp,
 }
 
-impl LiveState {
+impl Gotchi {
     pub fn new() -> Self {
         Self {
             hatched_at: None,
@@ -91,7 +91,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn get_feeding_cost(&self, state: &LiveState, block: &BlockInfo) -> u64 {
+    pub fn get_feeding_cost(&self, state: &Gotchi, block: &BlockInfo) -> u64 {
         let days_unfed = state.days_unfed(block, self.max_unfed_days as u64);
 
         let total = calculate_total_cost(days_unfed, self.feeding_cost_multiplier);
@@ -100,7 +100,7 @@ impl Config {
 
     pub fn get_total_feeding_cost(
         &self,
-        state: &LiveState,
+        state: &Gotchi,
         block: &BlockInfo,
         denom: &str,
     ) -> CResult<Coin> {
@@ -136,7 +136,7 @@ impl Default for Config {
 }
 
 #[cfg(test)]
-impl LiveState {
+impl Gotchi {
     pub fn default() -> Self {
         Self {
             hatched_at: None,
@@ -178,7 +178,7 @@ mod tests {
 
         #[test]
         fn is_dead() {
-            let mut state = LiveState::new();
+            let mut state = Gotchi::new();
             let block = mock_block(0);
 
             assert_that!(&state.is_dead(&block)).is_false();
@@ -192,17 +192,17 @@ mod tests {
 
         #[test]
         fn is_hatched() {
-            let state = LiveState::new();
+            let state = Gotchi::new();
             assert_that!(&state.is_hatched()).is_false();
 
-            let mut state = LiveState::new();
+            let mut state = Gotchi::new();
             state.hatched_at = Some(Timestamp::from_seconds(0));
             assert_that!(&state.is_hatched()).is_true();
         }
 
         #[test]
         fn hatch() {
-            let mut state = LiveState::new();
+            let mut state = Gotchi::new();
             let block = mock_block(0);
 
             state = state.hatch(&block).unwrap();
@@ -216,7 +216,7 @@ mod tests {
 
         #[test]
         fn feed() {
-            let mut state = LiveState::new();
+            let mut state = Gotchi::new();
             let block = mock_block(0);
 
             // unhatched
@@ -232,23 +232,23 @@ mod tests {
             // feeding
             assert_that!(state.feed(&mock_block(0), 2))
                 .is_ok()
-                .is_equal_to(LiveState::custom(0, 2));
+                .is_equal_to(Gotchi::custom(0, 2));
 
             assert_that!(state.feed(&mock_block(1), 2))
                 .is_ok()
-                .is_equal_to(LiveState::custom(0, 3));
+                .is_equal_to(Gotchi::custom(0, 3));
 
             assert_that!(state.feed(&mock_block(2), 2))
                 .is_ok()
-                .is_equal_to(LiveState::custom(0, 4));
+                .is_equal_to(Gotchi::custom(0, 4));
         }
 
         #[test]
         fn hatched_at() {
-            let state = LiveState::new();
+            let state = Gotchi::new();
             assert_that!(&state.hatched_at()).is_none();
 
-            let mut state = LiveState::new();
+            let mut state = Gotchi::new();
             state.hatched_at = Some(Timestamp::from_seconds(0));
             assert_that!(&state.hatched_at())
                 .is_some()
@@ -257,22 +257,22 @@ mod tests {
 
         #[test]
         fn death_time() {
-            let state = LiveState::new();
+            let state = Gotchi::new();
             assert_that!(&state.death_time()).is_equal_to(Timestamp::from_nanos(u64::MAX));
 
-            let mut state = LiveState::new();
+            let mut state = Gotchi::new();
             state.death_time = Timestamp::from_seconds(0);
             assert_that!(&state.death_time()).is_equal_to(Timestamp::from_seconds(0));
         }
 
         #[test]
         fn days_unfed_while_dead() {
-            let state = LiveState::new();
+            let state = Gotchi::new();
             let block = mock_block(0);
 
             assert_that!(&state.days_unfed(&block, 1)).is_equal_to(0);
 
-            let mut state = LiveState::new();
+            let mut state = Gotchi::new();
             state = state.hatch(&block).unwrap();
             assert_that!(&state.days_unfed(&block, 1)).is_equal_to(0);
 
@@ -296,26 +296,26 @@ mod tests {
 
         #[test]
         fn days_unfed_while_alive() {
-            let state = LiveState::new();
+            let state = Gotchi::new();
             let block = mock_block(0);
 
             // unhatched
             assert_that!(&state.days_unfed(&block, 1)).is_equal_to(0);
 
-            let state = LiveState::custom(10, 11);
+            let state = Gotchi::custom(10, 11);
             let block = mock_block(10);
             assert_that!(state.is_dead(&block)).is_false();
             assert_that!(&state.days_unfed(&block, 1)).is_equal_to(0);
             assert_that!(&state.days_unfed(&block, 2)).is_equal_to(1);
             assert_that!(&state.days_unfed(&block, 10)).is_equal_to(9);
 
-            let state = LiveState::custom(10, 12);
+            let state = Gotchi::custom(10, 12);
             assert_that!(state.is_dead(&block)).is_false();
             assert_that!(&state.days_unfed(&block, 2)).is_equal_to(0);
             assert_that!(&state.days_unfed(&block, 3)).is_equal_to(1);
             assert_that!(&state.days_unfed(&block, 10)).is_equal_to(8);
 
-            let state = LiveState::custom(10, 20);
+            let state = Gotchi::custom(10, 20);
             assert_that!(state.is_dead(&block)).is_false();
             assert_that!(&state.days_unfed(&block, 10)).is_equal_to(0);
             assert_that!(&state.days_unfed(&block, 11)).is_equal_to(1);
@@ -335,7 +335,7 @@ mod tests {
                 graveyard: Addr::unchecked("graveyard"),
             };
 
-            let state = LiveState::custom(0, 10);
+            let state = Gotchi::custom(0, 10);
 
             assert_that!(&config.get_feeding_cost(&state, &mock_block(0))).is_equal_to(0);
             assert_that!(&config.get_feeding_cost(&state, &mock_block(1))).is_equal_to(1000);
@@ -366,7 +366,7 @@ mod tests {
                 graveyard: Addr::unchecked("graveyard"),
             };
 
-            let state = LiveState::custom(0, 10);
+            let state = Gotchi::custom(0, 10);
 
             assert_that!(&config.get_total_feeding_cost(&state, &mock_block(0), "unewt"))
                 .is_ok()

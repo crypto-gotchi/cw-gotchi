@@ -3,7 +3,7 @@ use cw721_base::ContractError;
 
 use crate::{
     msg::HealthResponse,
-    state::{LiveState, CONFIG, LIVE_STATES},
+    state::{Gotchi, CONFIG, LIVE_STATES},
 };
 
 pub fn query_health(deps: Deps, env: Env, token_id: String) -> StdResult<HealthResponse> {
@@ -41,7 +41,7 @@ pub fn query_feeding_cost(deps: Deps, env: Env, token_id: String) -> StdResult<u
     Ok(config.get_feeding_cost(&state, &env.block).into())
 }
 
-pub fn query_live_state(deps: Deps, token_id: String) -> StdResult<LiveState> {
+pub fn query_live_state(deps: Deps, token_id: String) -> StdResult<Gotchi> {
     LIVE_STATES.load(deps.storage, token_id.clone())
 }
 pub fn query_config(deps: Deps) -> StdResult<crate::state::Config> {

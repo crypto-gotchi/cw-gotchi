@@ -60,7 +60,7 @@ pub mod entry {
     };
     use error::ContractError;
     use execute::{execute_feed, execute_hatch, execute_mint, execute_reap};
-    use state::{LiveState, LIVE_STATES};
+    use state::{Gotchi, LIVE_STATES};
 
     // This makes a conscious choice on the various generics used by the contract
     #[cfg_attr(not(feature = "library"), entry_point)]

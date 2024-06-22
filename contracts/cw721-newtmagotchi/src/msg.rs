@@ -1,7 +1,7 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{CustomMsg, Timestamp, Uint128};
 
-use crate::state::{Config, LiveState};
+use crate::state::{Config, Gotchi};
 
 #[cw_serde]
 pub enum MagotchiExecuteExtension {
@@ -40,7 +40,7 @@ pub enum MagotchiQueryExtension {
     IsHatched { token_id: String },
 
     /// Return the live state of the magotchi
-    #[returns(LiveState)]
+    #[returns(Gotchi)]
     LiveState { token_id: String },
 }
 

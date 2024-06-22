@@ -3,7 +3,7 @@ use cosmwasm_std::{BlockInfo, Coin, Deps, DepsMut, Empty, Env, MessageInfo, Orde
 use crate::{
     error::{CResult, ContractError},
     msg::MagotchiExecuteExtension,
-    state::{LiveState, CONFIG, LIVE_STATES},
+    state::{Gotchi, CONFIG, LIVE_STATES},
     Cw721MetadataContract, Metadata,
 };
 
@@ -113,7 +113,7 @@ pub fn get_all_dead(deps: Deps, block: &BlockInfo) -> Vec<String> {
 
 pub fn execute_mint(deps: &mut DepsMut, token_id: String) -> Result<(), ContractError> {
     LIVE_STATES
-        .save(deps.storage, token_id.to_string(), &LiveState::new())
+        .save(deps.storage, token_id.to_string(), &Gotchi::new())
         .map_err(Into::into)
 }
 
@@ -154,7 +154,7 @@ mod tests {
 
         for token in TEST_TOKENS.iter() {
             let _ = LIVE_STATES
-                .save(deps.storage, token.to_string(), &LiveState::new())
+                .save(deps.storage, token.to_string(), &Gotchi::new())
                 .unwrap();
         }
     }
@@ -409,7 +409,7 @@ mod tests {
             for &token in TEST_TOKENS.iter() {
                 let _ = execute_hatch(&mut deps.as_mut(), &env, token).unwrap();
                 let state = LIVE_STATES.load(&deps.storage, token.to_string()).unwrap();
-                let state = LiveState::custom(
+                let state = Gotchi::custom(
                     state.hatched_at().unwrap().seconds() / (24 * 60 * 60),
                     env.block.time.plus_seconds(1).seconds() / (24 * 60 * 60),
                 );
@@ -446,7 +446,7 @@ mod tests {
             for &token in TEST_TOKENS[..2].iter() {
                 let _ = execute_hatch(&mut deps.as_mut(), &env, token).unwrap();
                 let state = LIVE_STATES.load(&deps.storage, token.to_string()).unwrap();
-                let state = LiveState::custom(
+                let state = Gotchi::custom(
                     state.hatched_at().unwrap().seconds() / (24 * 60 * 60),
                     env.block.time.plus_seconds(1).seconds() / (24 * 60 * 60),
                 );
@@ -489,7 +489,7 @@ mod tests {
             for &token in TEST_TOKENS[..2].iter() {
                 let _ = execute_hatch(&mut deps.as_mut(), &env, token).unwrap();
                 let state = LIVE_STATES.load(&deps.storage, token.to_string()).unwrap();
-                let state = LiveState::custom(
+                let state = Gotchi::custom(
                     state.hatched_at().unwrap().seconds() / (24 * 60 * 60),
                     env.block.time.plus_seconds(1).seconds() / (24 * 60 * 60),
                 );
@@ -530,7 +530,7 @@ mod tests {
             for &token in TEST_TOKENS.iter() {
                 let _ = execute_hatch(&mut deps.as_mut(), &env, token).unwrap();
                 let state = LIVE_STATES.load(&deps.storage, token.to_string()).unwrap();
-                let state = LiveState::custom(
+                let state = Gotchi::custom(
                     state.hatched_at().unwrap().seconds() / (24 * 60 * 60),
                     env.block.time.plus_seconds(1).seconds() / (24 * 60 * 60),
                 );
