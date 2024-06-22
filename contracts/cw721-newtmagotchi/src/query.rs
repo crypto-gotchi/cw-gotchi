@@ -10,16 +10,16 @@ pub fn query_health(deps: Deps, env: Env, token_id: String) -> StdResult<HealthR
     let state = LIVE_STATES.load(deps.storage, token_id.clone())?;
     let config = CONFIG.load(deps.storage)?;
 
-    let days_unfed = state.days_unfed(&env.block, config.max_days_without_food as u64);
+    let days_unfed = state.days_unfed(&env.block, config.max_unfed_days as u64);
 
     Ok(HealthResponse {
-        health: (config.max_days_without_food - days_unfed as u32) as u8,
+        health: (config.max_unfed_days - days_unfed as u32) as u8,
     })
 }
 
 pub fn query_birthday(deps: Deps, token_id: String) -> StdResult<Timestamp> {
     let state = LIVE_STATES.load(deps.storage, token_id.clone())?;
-    match state.birthday() {
+    match state.hatched_at() {
         Some(birthday) => Ok(birthday),
         None => Err(cosmwasm_std::StdError::not_found("No birthday set")),
     }
@@ -27,7 +27,7 @@ pub fn query_birthday(deps: Deps, token_id: String) -> StdResult<Timestamp> {
 
 pub fn query_dying_day(deps: Deps, token_id: String) -> StdResult<Timestamp> {
     let state = LIVE_STATES.load(deps.storage, token_id.clone())?;
-    Ok(state.dying_day())
+    Ok(state.death_time())
 }
 
 pub fn query_is_hatched(deps: Deps, token_id: String) -> StdResult<bool> {

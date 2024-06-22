@@ -49,6 +49,8 @@ pub type QueryMsg = cw721_base::QueryMsg<MagotchiQueryExtension>;
 
 pub mod entry {
 
+    use std::borrow::BorrowMut;
+
     use super::*;
 
     #[cfg(not(feature = "library"))]
@@ -58,6 +60,7 @@ pub mod entry {
     };
     use error::ContractError;
     use execute::{execute_feed, execute_hatch, execute_mint, execute_reap};
+    use state::{LiveState, LIVE_STATES};
 
     // This makes a conscious choice on the various generics used by the contract
     #[cfg_attr(not(feature = "library"), entry_point)]
@@ -96,7 +99,14 @@ pub mod entry {
                 owner: _,
                 token_uri: _,
                 extension: _,
-            } => execute_mint(deps, token_id, env, info, msg),
+            } => {
+                // Initialize the live state for the token. No need to check if it already exists, cause the cw721 base contract will fail if it does.
+                execute_mint(deps.borrow_mut(), token_id)?;
+                Cw721MetadataContract::default()
+                    .execute(deps, env, info, msg)
+                    .map_err(ContractError::from)
+            }
+
             _ => Cw721MetadataContract::default()
                 .execute(deps, env, info, msg)
                 .map_err(ContractError::from),
