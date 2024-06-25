@@ -1,8 +1,10 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Binary;
+use cw_orch::ExecuteFns;
 use cw_utils::Expiration;
 
 #[cw_serde]
+#[derive(ExecuteFns)]
 pub enum Cw721ExecuteMsg {
     /// Transfer is a base message to move a token to another account without triggering actions
     TransferNft { recipient: String, token_id: String },

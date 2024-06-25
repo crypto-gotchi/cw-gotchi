@@ -1,9 +1,11 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{CustomMsg, Timestamp, Uint128};
+use cw_orch::{ExecuteFns, QueryFns};
 
 use crate::state::{Config, Gotchi};
 
 #[cw_serde]
+#[derive(ExecuteFns)]
 pub enum MagotchiExecuteExtension {
     /// Hatch a new magotchi, you need to feed it from now on
     Hatch { token_id: String },
@@ -16,7 +18,7 @@ pub enum MagotchiExecuteExtension {
 impl CustomMsg for MagotchiExecuteExtension {}
 
 #[cw_serde]
-#[derive(QueryResponses)]
+#[derive(QueryResponses, QueryFns)]
 pub enum MagotchiQueryExtension {
     /// Returns the health of the magotchi
     #[returns(HealthResponse)]

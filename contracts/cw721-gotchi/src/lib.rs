@@ -1,6 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Empty;
 pub use cw721_base::{InstantiateMsg, MinterResponse};
+use cw_orch::ExecuteFns;
 use msg::{MagotchiExecuteExtension, MagotchiQueryExtension};
 pub mod error;
 pub mod execute;
@@ -47,6 +48,7 @@ pub type Cw721MetadataContract<'a> = cw721_base::Cw721Contract<
     MagotchiExecuteExtension,
     MagotchiQueryExtension,
 >;
+
 pub type ExecuteMsg = cw721_base::ExecuteMsg<Extension, MagotchiExecuteExtension>;
 pub type QueryMsg = cw721_base::QueryMsg<MagotchiQueryExtension>;
 

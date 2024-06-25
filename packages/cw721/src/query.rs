@@ -1,37 +1,39 @@
-use cosmwasm_schema::cw_serde;
+use cosmwasm_schema::{cw_serde, QueryResponses};
+use cw_orch::QueryFns;
 use cw_utils::Expiration;
 
 #[cw_serde]
+#[derive(QueryFns, QueryResponses)]
 pub enum Cw721QueryMsg {
     /// Return the owner of the given token, error if token does not exist
-    /// Return type: OwnerOfResponse
+    #[returns(OwnerOfResponse)]
     OwnerOf {
         token_id: String,
         /// unset or false will filter out expired approvals, you must set to true to see them
         include_expired: Option<bool>,
     },
     /// Return operator that can access all of the owner's tokens.
-    /// Return type: `ApprovalResponse`
+    #[returns(ApprovalResponse)]
     Approval {
         token_id: String,
         spender: String,
         include_expired: Option<bool>,
     },
     /// Return approvals that a token has
-    /// Return type: `ApprovalsResponse`
+    #[returns(ApprovalsResponse)]
     Approvals {
         token_id: String,
         include_expired: Option<bool>,
     },
     /// Return approval of a given operator for all tokens of an owner, error if not set
-    /// Return type: `OperatorResponse`
+    #[returns(OperatorResponse)]
     Operator {
         owner: String,
         operator: String,
         include_expired: Option<bool>,
     },
     /// List all operators that can access all of the owner's tokens
-    /// Return type: `OperatorsResponse`
+    #[returns(OperatorsResponse)]
     AllOperators {
         owner: String,
         /// unset or false will filter out expired items, you must set to true to see them
@@ -40,18 +42,21 @@ pub enum Cw721QueryMsg {
         limit: Option<u32>,
     },
     /// Total number of tokens issued
+    #[returns(NumTokensResponse)]
     NumTokens {},
 
     /// With MetaData Extension.
     /// Returns top-level metadata about the contract: `ContractInfoResponse`
+    #[returns(ContractInfoResponse)]
     ContractInfo {},
     /// With MetaData Extension.
     /// Returns metadata about one particular token, based on *ERC721 Metadata JSON Schema*
     /// but directly from the contract: `NftInfoResponse`
+    #[returns(NftInfoResponse<String>)]
     NftInfo { token_id: String },
     /// With MetaData Extension.
     /// Returns the result of both `NftInfo` and `OwnerOf` as one query as an optimization
-    /// for clients: `AllNftInfo`
+    #[returns(AllNftInfoResponse<String>)]
     AllNftInfo {
         token_id: String,
         /// unset or false will filter out expired approvals, you must set to true to see them
@@ -60,7 +65,7 @@ pub enum Cw721QueryMsg {
 
     /// With Enumerable extension.
     /// Returns all tokens owned by the given address, [] if unset.
-    /// Return type: TokensResponse.
+    #[returns(TokensResponse)]
     Tokens {
         owner: String,
         start_after: Option<String>,
@@ -68,7 +73,7 @@ pub enum Cw721QueryMsg {
     },
     /// With Enumerable extension.
     /// Requires pagination. Lists all token_ids controlled by the contract.
-    /// Return type: TokensResponse.
+    #[returns(TokensResponse)]
     AllTokens {
         start_after: Option<String>,
         limit: Option<u32>,

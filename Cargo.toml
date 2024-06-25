@@ -22,6 +22,7 @@ cw2 = "^1.1"
 cw20 = "^1.1"
 cw721 = { version = "*", path = "./packages/cw721" }
 cw721-base = { version = "*", path = "./contracts/cw721-base" }
+cw-orch = { git = "https://github.com/AbstractSDK/cw-orchestrator.git", commit = "04455c4" }
 cw-multi-test = "^0.20"
 cw-ownable = "^0.5"
 cw-storage-plus = "^1.1"

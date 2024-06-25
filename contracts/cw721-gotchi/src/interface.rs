@@ -1,6 +1,5 @@
 use cw721_base::InstantiateMsg;
 use cw_orch::environment::ChainInfoOwned;
-// ANCHOR: custom_interface
 use cw_orch::{interface, prelude::*};
 
 use crate::{ExecuteMsg, QueryMsg};

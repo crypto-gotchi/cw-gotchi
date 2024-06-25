@@ -1,8 +1,12 @@
+use std::fmt::Debug;
+
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Binary, Coin};
 use cw721::Expiration;
+use cw_orch::{ExecuteFns, QueryFns};
 use cw_ownable::{cw_ownable_execute, cw_ownable_query};
 use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -24,7 +28,7 @@ pub struct InstantiateMsg {
 /// use other control logic in any contract that inherits this.
 #[cw_ownable_execute]
 #[cw_serde]
-
+#[derive(ExecuteFns)]
 pub enum ExecuteMsg<T, E> {
     /// Transfer is a base message to move a token to another account without triggering actions
     TransferNft { recipient: String, token_id: String },
@@ -84,8 +88,8 @@ pub enum ExecuteMsg<T, E> {
 
 #[cw_ownable_query]
 #[cw_serde]
-#[derive(QueryResponses)]
-pub enum QueryMsg<Q: JsonSchema> {
+#[derive(QueryResponses, QueryFns)]
+pub enum QueryMsg<Q: schemars::JsonSchema> {
     /// Return the owner of the given token, error if token does not exist
     #[returns(cw721::OwnerOfResponse)]
     OwnerOf {
