@@ -1,12 +1,8 @@
-use std::fmt::Debug;
-
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Binary, Coin};
 use cw721::Expiration;
 use cw_orch::{ExecuteFns, QueryFns};
 use cw_ownable::{cw_ownable_execute, cw_ownable_query};
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 
 #[cw_serde]
 pub struct InstantiateMsg {

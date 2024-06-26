@@ -1,7 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Empty;
 pub use cw721_base::{InstantiateMsg, MinterResponse};
-use cw_orch::ExecuteFns;
 use msg::{MagotchiExecuteExtension, MagotchiQueryExtension};
 pub mod error;
 pub mod execute;
@@ -64,8 +63,8 @@ pub mod entry {
         coin, to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
     };
     use error::ContractError;
-    use execute::{execute_feed, execute_hatch, execute_mint, execute_reap};
-    use state::{Config, Gotchi, CONFIG, LIVE_STATES};
+    use execute::{execute_feed, execute_hatch, execute_mint, execute_reap, execute_update_config};
+    use state::{Config, CONFIG};
 
     // This makes a conscious choice on the various generics used by the contract
     #[cfg_attr(not(feature = "library"), entry_point)]
@@ -105,6 +104,9 @@ pub mod entry {
                     execute_hatch(&mut deps, &env, &token_id)
                 }
                 MagotchiExecuteExtension::Reap { tokens } => execute_reap(&mut deps, tokens, &env),
+                MagotchiExecuteExtension::UpdateConfig {
+                    config: partial_config,
+                } => execute_update_config(&mut deps, partial_config),
             },
             ExecuteMsg::Mint {
                 token_id,

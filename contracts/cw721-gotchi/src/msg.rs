@@ -2,7 +2,7 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{CustomMsg, Timestamp, Uint128};
 use cw_orch::{ExecuteFns, QueryFns};
 
-use crate::state::{Config, Gotchi};
+use crate::state::{Config, Gotchi, PartialConfig};
 
 #[cw_serde]
 #[derive(ExecuteFns)]
@@ -13,6 +13,8 @@ pub enum MagotchiExecuteExtension {
     Feed { token_id: String },
     /// Reap all dead magotchis, sending it to the graveyard. If option tokens is provided, only those tokens will be reaped, otherwise all dead tokens will be reaped (might fail if there are too many dead tokens to reap in one go)
     Reap { tokens: Option<Vec<String>> },
+    /// Set the Config of the contract, including the daily feeding cost, the maximum days without food and the day length
+    UpdateConfig { config: PartialConfig },
 }
 
 impl CustomMsg for MagotchiExecuteExtension {}

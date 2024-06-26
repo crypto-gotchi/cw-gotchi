@@ -2,6 +2,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, BlockInfo, Coin, Timestamp, Uint128};
 use cw721::Expiration;
 use cw_storage_plus::{Item, Map};
+use partially::Partial;
 
 use crate::{
     error::{CResult, ContractError},
@@ -78,6 +79,10 @@ impl Gotchi {
     }
 }
 
+// define a base structure, with the `Partial` derive macro
+#[derive(Partial)]
+// further, instruct the macro to derive `Default` on the generated structure
+#[partially(derive(Default))]
 #[cw_serde]
 pub struct Config {
     /// the cost of feeding a magotchi per day

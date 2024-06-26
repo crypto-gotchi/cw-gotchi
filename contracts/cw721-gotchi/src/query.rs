@@ -1,5 +1,4 @@
 use cosmwasm_std::{Deps, Env, StdResult, Timestamp};
-use cw721_base::ContractError;
 
 use crate::{
     msg::HealthResponse,

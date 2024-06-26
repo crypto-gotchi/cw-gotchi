@@ -1,10 +1,9 @@
-use cosmwasm_std::{BlockInfo, Coin, Deps, DepsMut, Empty, Env, MessageInfo, Order, Response};
+use cosmwasm_std::{BlockInfo, Coin, Deps, DepsMut, Empty, Env, Order, Response};
 
 use crate::{
     error::{CResult, ContractError},
-    msg::MagotchiExecuteExtension,
-    state::{Gotchi, CONFIG, LIVE_STATES},
-    Cw721MetadataContract, Metadata,
+    state::{Gotchi, PartialConfig, CONFIG, LIVE_STATES},
+    Cw721MetadataContract,
 };
 
 pub fn parse_funds(funds: &Vec<Coin>) -> Result<Coin, ContractError> {
@@ -115,6 +114,26 @@ pub fn execute_mint(deps: &mut DepsMut, token_id: String) -> Result<(), Contract
     LIVE_STATES
         .save(deps.storage, token_id.to_string(), &Gotchi::new())
         .map_err(Into::into)
+}
+
+pub fn execute_update_config(
+    deps: &mut DepsMut,
+    partial_config: PartialConfig,
+) -> Result<Response, ContractError> {
+    CONFIG.update(deps.storage, |mut config| -> Result<_, ContractError> {
+        if let Some(daily_feeding_cost) = partial_config.daily_feeding_cost {
+            config.daily_feeding_cost = daily_feeding_cost;
+        }
+        if let Some(max_unfed_days) = partial_config.max_unfed_days {
+            config.max_unfed_days = max_unfed_days;
+        }
+        if let Some(feeding_cost_multiplier) = partial_config.feeding_cost_multiplier {
+            config.feeding_cost_multiplier = feeding_cost_multiplier;
+        }
+        Ok(config)
+    })?;
+
+    Ok(Response::default())
 }
 
 #[cfg(test)]
@@ -349,7 +368,7 @@ mod tests {
     }
 
     mod reap {
-        use cw721_base::{Cw721Contract, InstantiateMsg};
+        use cw721_base::{InstantiateMsg};
 
         use crate::{ExecuteMsg, CONTRACT_NAME};
         const SYMBOL: &str = "MAG";
@@ -553,13 +572,13 @@ mod tests {
     }
 
     mod mint {
-        use std::borrow::BorrowMut;
+        
 
-        use crate::ExecuteMsg;
+        
 
         use super::*;
-        use cosmwasm_std::{attr, coins, from_binary};
-        use speculoos::{assert_that, iter::ContainingIntoIterAssertions};
+        
+        use speculoos::{assert_that};
 
         #[test]
         fn test_execute_mint() {

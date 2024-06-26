@@ -37,6 +37,7 @@ cw-orch = { git = "https://github.com/AbstractSDK/cw-orchestrator.git", branch =
 clap = { version = "4.5.7", optional = true }
 dotenv = { version = "*", optional = true }
 env_logger = { version = "*", optional = true }
+partially = { version = "0.2.1", features = ["derive"] }
 
 [dev-dependencies]
 anyhow = "1.0.86"
