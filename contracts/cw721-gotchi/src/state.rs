@@ -65,6 +65,10 @@ impl Gotchi {
         self.death_time
     }
 
+    pub fn days_until_dead(&self, block: &BlockInfo) -> u64 {
+        (self.death_time.seconds() - block.time.seconds()) / (24 * 60 * 60)
+    }
+
     pub fn days_unfed(&self, block: &BlockInfo, max_unfed_days: u64) -> u64 {
         if !self.is_hatched() {
             return 0;
@@ -73,9 +77,17 @@ impl Gotchi {
         if self.is_dead(block) {
             return max_unfed_days;
         }
+        let days_until_dead = self.days_until_dead(block);
 
-        let days_until_dead = (self.death_time.seconds() - block.time.seconds()) / (24 * 60 * 60);
-        max_unfed_days - days_until_dead
+        (max_unfed_days - days_until_dead)
+            .checked_sub(1)
+            .unwrap_or(0)
+    }
+
+    pub fn health(&self, block: &BlockInfo, max_unfed_days: u64) -> u32 {
+        let days_unfed = self.days_unfed(block, max_unfed_days);
+
+        return (max_unfed_days - days_unfed) as u32;
     }
 }
 
@@ -126,6 +138,21 @@ impl Config {
             amount: feeding_price,
         })
     }
+
+    pub fn validate(&self) -> Result<(), ContractError> {
+        if self.max_unfed_days > 1
+            && !self.daily_feeding_cost.is_empty()
+            && !self
+                .daily_feeding_cost
+                .iter()
+                .any(|coin| coin.amount.is_zero())
+            && self.graveyard != Addr::unchecked("")
+        {
+            Ok(())
+        } else {
+            Err(ContractError::InvalidConfig {})
+        }
+    }
 }
 
 #[cfg(test)]
@@ -162,6 +189,18 @@ impl Gotchi {
             death_time: Timestamp::default().plus_days(death_time_days_from_epoch),
         }
     }
+
+    pub fn custom_min_1sec(
+        hatched_at_days_from_epoch: u64,
+        death_time_days_from_epoch: u64,
+    ) -> Self {
+        Self {
+            hatched_at: Some(Timestamp::default().plus_days(hatched_at_days_from_epoch)),
+            death_time: Timestamp::default()
+                .plus_days(death_time_days_from_epoch)
+                .minus_seconds(1),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -178,8 +217,45 @@ mod tests {
         }
     }
 
+    fn mock_block_plus1(days_since_epoch: u64) -> BlockInfo {
+        BlockInfo {
+            time: Timestamp::from_seconds(ONE_DAY * days_since_epoch + 1),
+            height: 0,
+            chain_id: "neutron-1".to_owned(),
+        }
+    }
+    fn mock_block_minus1(days_since_epoch: u64) -> BlockInfo {
+        BlockInfo {
+            time: Timestamp::from_seconds(ONE_DAY * days_since_epoch - 1),
+            height: 0,
+            chain_id: "neutron-1".to_owned(),
+        }
+    }
+
     mod live_state {
         use super::*;
+
+        #[test]
+        fn days_until_dead() {
+            let block = mock_block(1);
+            let block_min1 = mock_block_minus1(1);
+
+            let state = Gotchi::custom_min_1sec(1, 2);
+            assert_that!(&state.days_until_dead(&block)).is_equal_to(0);
+            assert_that!(state.days_until_dead(&block_min1)).is_equal_to(1);
+
+            let state = Gotchi::custom_min_1sec(1, 3);
+            assert_that!(&state.days_until_dead(&block)).is_equal_to(1);
+            assert_that!(state.days_until_dead(&block_min1)).is_equal_to(2);
+
+            let state = Gotchi::custom_min_1sec(1, 11);
+            assert_that!(&state.days_until_dead(&block)).is_equal_to(9);
+            assert_that!(state.days_until_dead(&block_min1)).is_equal_to(10);
+
+            let state = Gotchi::custom_min_1sec(1, 101);
+            assert_that!(&state.days_until_dead(&block)).is_equal_to(99);
+            assert_that!(state.days_until_dead(&block_min1)).is_equal_to(100);
+        }
 
         #[test]
         fn is_dead() {
@@ -307,24 +383,74 @@ mod tests {
             // unhatched
             assert_that!(&state.days_unfed(&block, 1)).is_equal_to(0);
 
-            let state = Gotchi::custom(10, 11);
+            let state = Gotchi::custom_min_1sec(10, 11);
             let block = mock_block(10);
+            let block_plus1_sec = mock_block_plus1(10);
+            let block_min1_sec = mock_block_minus1(10);
             assert_that!(state.is_dead(&block)).is_false();
+            // edge case with max_unfed_days = 1 (not possible in real life, but for testing purposes)
             assert_that!(&state.days_unfed(&block, 1)).is_equal_to(0);
+            assert_that!(state.days_unfed(&block_plus1_sec, 1)).is_equal_to(0);
+            assert_that!(state.days_unfed(&block_min1_sec, 1)).is_equal_to(0);
+
+            // check with max_unfed_days = 2 and one second difference
+            assert_that!(state.days_unfed(&block, 2)).is_equal_to(1);
+            assert_that!(state.days_unfed(&block_plus1_sec, 2)).is_equal_to(1);
+            assert_that!(state.days_unfed(&block_min1_sec, 2)).is_equal_to(0);
+
             assert_that!(&state.days_unfed(&block, 2)).is_equal_to(1);
             assert_that!(&state.days_unfed(&block, 10)).is_equal_to(9);
 
-            let state = Gotchi::custom(10, 12);
+            // check with 2 days to live
+            let state = Gotchi::custom_min_1sec(10, 12);
             assert_that!(state.is_dead(&block)).is_false();
             assert_that!(&state.days_unfed(&block, 2)).is_equal_to(0);
             assert_that!(&state.days_unfed(&block, 3)).is_equal_to(1);
             assert_that!(&state.days_unfed(&block, 10)).is_equal_to(8);
 
-            let state = Gotchi::custom(10, 20);
+            // check with 10 days to live
+            let state = Gotchi::custom_min_1sec(10, 20);
             assert_that!(state.is_dead(&block)).is_false();
             assert_that!(&state.days_unfed(&block, 10)).is_equal_to(0);
             assert_that!(&state.days_unfed(&block, 11)).is_equal_to(1);
             assert_that!(&state.days_unfed(&block, 20)).is_equal_to(10);
+        }
+
+        #[test]
+        fn health() {
+            let state = Gotchi::new();
+            let block = mock_block(10);
+
+            // unhatched
+            assert_that!(&state.health(&block, 1)).is_equal_to(1);
+
+            let state = Gotchi::custom_min_1sec(10, 11);
+            let block = mock_block(10);
+            let block_plus1 = mock_block_plus1(10);
+            let block_minus1 = mock_block_minus1(10);
+
+            assert_that!(state.is_dead(&block)).is_false();
+            assert_that!(state.is_dead(&block_plus1)).is_false();
+
+            assert_that!(&state.health(&block, 1)).is_equal_to(1);
+            assert_that!(state.health(&block_plus1, 1)).is_equal_to(1);
+
+            assert_that!(state.health(&block_minus1, 2)).is_equal_to(2);
+            assert_that!(state.health(&block_plus1, 2)).is_equal_to(1);
+            assert_that!(&state.health(&block, 2)).is_equal_to(1);
+            assert_that!(&state.health(&block, 10)).is_equal_to(1);
+
+            let state = Gotchi::custom_min_1sec(10, 12);
+            assert_that!(state.is_dead(&block)).is_false();
+            assert_that!(&state.health(&block, 2)).is_equal_to(2);
+            assert_that!(&state.health(&block, 3)).is_equal_to(2);
+            assert_that!(&state.health(&block, 10)).is_equal_to(2);
+
+            let state = Gotchi::custom_min_1sec(10, 20);
+            assert_that!(state.is_dead(&block)).is_false();
+            assert_that!(&state.health(&block, 10)).is_equal_to(10);
+            assert_that!(&state.health(&block, 11)).is_equal_to(10);
+            assert_that!(&state.health(&block, 20)).is_equal_to(10);
         }
     }
 
@@ -340,7 +466,7 @@ mod tests {
                 graveyard: Addr::unchecked("graveyard"),
             };
 
-            let state = Gotchi::custom(0, 10);
+            let state = Gotchi::custom_min_1sec(0, 10);
 
             assert_that!(&config.get_feeding_cost(&state, &mock_block(0))).is_equal_to(0);
             assert_that!(&config.get_feeding_cost(&state, &mock_block(1))).is_equal_to(1000);
@@ -371,7 +497,7 @@ mod tests {
                 graveyard: Addr::unchecked("graveyard"),
             };
 
-            let state = Gotchi::custom(0, 10);
+            let state = Gotchi::custom_min_1sec(0, 10);
 
             assert_that!(&config.get_total_feeding_cost(&state, &mock_block(0), "unewt"))
                 .is_ok()
@@ -388,6 +514,42 @@ mod tests {
             assert_that!(&config.get_total_feeding_cost(&state, &mock_block(10), "unewt"))
                 .is_ok()
                 .is_equal_to(Coin::new(10_000_000, "unewt"));
+        }
+
+        #[test]
+        fn validate() {
+            let mut config = Config {
+                daily_feeding_cost: vec![],
+                max_unfed_days: 10,
+                feeding_cost_multiplier: 1,
+                graveyard: Addr::unchecked("graveyard"),
+            };
+            assert_that!(&config.validate()).is_err();
+            config.daily_feeding_cost = vec![Coin::new(0, "unewt")];
+            assert_that!(config.validate()).is_err();
+            config.daily_feeding_cost = vec![Coin::new(1, "unewt"), Coin::new(0, "unewt")];
+            assert_that!(config.validate()).is_err();
+            config.daily_feeding_cost = vec![Coin::new(1, "unewt")];
+            assert_that!(config.validate()).is_ok();
+
+            config.feeding_cost_multiplier = 0;
+            assert_that!(&config.validate()).is_ok();
+            config.feeding_cost_multiplier = 1;
+            assert_that!(&config.validate()).is_ok();
+
+            config.max_unfed_days = 0;
+            assert_that!(&config.validate()).is_err();
+            config.max_unfed_days = 1;
+            assert_that!(&config.validate()).is_err();
+            config.max_unfed_days = 2;
+            assert_that!(&config.validate()).is_ok();
+            config.max_unfed_days = 10;
+            assert_that!(&config.validate()).is_ok();
+
+            config.graveyard = Addr::unchecked("");
+            assert_that!(&config.validate()).is_err();
+            config.graveyard = Addr::unchecked("graveyard");
+            assert_that!(&config.validate()).is_ok();
         }
     }
 }

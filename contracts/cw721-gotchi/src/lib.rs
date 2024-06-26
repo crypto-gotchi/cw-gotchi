@@ -81,6 +81,7 @@ pub mod entry {
             feeding_cost_multiplier: 1,
             graveyard: info.sender.clone(),
         };
+        initial_config.validate()?;
         CONFIG.save(deps.storage, &initial_config)?;
 
         Cw721MetadataContract::default()
@@ -138,17 +139,17 @@ pub mod entry {
                     to_json_binary(&query::query_feeding_cost(deps, env, token_id)?)
                 }
                 MagotchiQueryExtension::Config {} => to_json_binary(&query::query_config(deps)?),
-                MagotchiQueryExtension::Birthday { token_id } => {
-                    to_json_binary(&query::query_birthday(deps, token_id)?)
+                MagotchiQueryExtension::HatchedAt { token_id } => {
+                    to_json_binary(&query::query_hatched_at(deps, token_id)?)
                 }
-                MagotchiQueryExtension::DyingDay { token_id } => {
-                    to_json_binary(&query::query_dying_day(deps, token_id)?)
+                MagotchiQueryExtension::DeathTime { token_id } => {
+                    to_json_binary(&query::query_death_time(deps, token_id)?)
                 }
                 MagotchiQueryExtension::IsHatched { token_id } => {
                     to_json_binary(&query::query_is_hatched(deps, token_id)?)
                 }
-                MagotchiQueryExtension::LiveState { token_id } => {
-                    to_json_binary(&query::query_live_state(deps, token_id)?)
+                MagotchiQueryExtension::GotchiState { token_id } => {
+                    to_json_binary(&query::query_gotchi_state(deps, token_id)?)
                 }
             },
             _ => Cw721MetadataContract::default().query(deps, env, msg),

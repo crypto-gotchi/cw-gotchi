@@ -35,6 +35,8 @@ pub enum ContractError {
 
     #[error("Not all items are dead")]
     NotAllDead {},
+    #[error("Invalid config. Minimum days unfed must be greater than 1. Feeding cost must contain a valid Coin. Graveyard must be set.")]
+    InvalidConfig {},
 }
 
 impl ContractError {

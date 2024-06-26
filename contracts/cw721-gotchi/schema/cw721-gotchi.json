@@ -1181,10 +1181,10 @@
             "description": "Return the birthday of the magotchi",
             "type": "object",
             "required": [
-              "birthday"
+              "hatched_at"
             ],
             "properties": {
-              "birthday": {
+              "hatched_at": {
                 "type": "object",
                 "required": [
                   "token_id"
@@ -1203,10 +1203,10 @@
             "description": "Return the dying day of the magotchi",
             "type": "object",
             "required": [
-              "dying_day"
+              "death_time"
             ],
             "properties": {
-              "dying_day": {
+              "death_time": {
                 "type": "object",
                 "required": [
                   "token_id"
@@ -1247,10 +1247,10 @@
             "description": "Return the live state of the magotchi",
             "type": "object",
             "required": [
-              "live_state"
+              "gotchi_state"
             ],
             "properties": {
-              "live_state": {
+              "gotchi_state": {
                 "type": "object",
                 "required": [
                   "token_id"
@@ -1433,10 +1433,10 @@
               "description": "Return the birthday of the magotchi",
               "type": "object",
               "required": [
-                "birthday"
+                "hatched_at"
               ],
               "properties": {
-                "birthday": {
+                "hatched_at": {
                   "type": "object",
                   "required": [
                     "token_id"
@@ -1455,10 +1455,10 @@
               "description": "Return the dying day of the magotchi",
               "type": "object",
               "required": [
-                "dying_day"
+                "death_time"
               ],
               "properties": {
-                "dying_day": {
+                "death_time": {
                   "type": "object",
                   "required": [
                     "token_id"
@@ -1499,10 +1499,10 @@
               "description": "Return the live state of the magotchi",
               "type": "object",
               "required": [
-                "live_state"
+                "gotchi_state"
               ],
               "properties": {
-                "live_state": {
+                "gotchi_state": {
                   "type": "object",
                   "required": [
                     "token_id"
@@ -2029,10 +2029,10 @@
               "description": "Return the birthday of the magotchi",
               "type": "object",
               "required": [
-                "birthday"
+                "hatched_at"
               ],
               "properties": {
-                "birthday": {
+                "hatched_at": {
                   "type": "object",
                   "required": [
                     "token_id"
@@ -2051,10 +2051,10 @@
               "description": "Return the dying day of the magotchi",
               "type": "object",
               "required": [
-                "dying_day"
+                "death_time"
               ],
               "properties": {
-                "dying_day": {
+                "death_time": {
                   "type": "object",
                   "required": [
                     "token_id"
@@ -2095,10 +2095,10 @@
               "description": "Return the live state of the magotchi",
               "type": "object",
               "required": [
-                "live_state"
+                "gotchi_state"
               ],
               "properties": {
-                "live_state": {
+                "gotchi_state": {
                   "type": "object",
                   "required": [
                     "token_id"

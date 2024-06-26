@@ -130,6 +130,8 @@ pub fn execute_update_config(
         if let Some(feeding_cost_multiplier) = partial_config.feeding_cost_multiplier {
             config.feeding_cost_multiplier = feeding_cost_multiplier;
         }
+        config.validate()?;
+
         Ok(config)
     })?;
 
@@ -179,6 +181,7 @@ mod tests {
     }
 
     mod hatch {
+
         use super::*;
 
         #[test]
@@ -186,7 +189,7 @@ mod tests {
             let mut deps = prepare();
 
             // Mock environment and message info
-            let env = mock_env();
+            let mut env = mock_env();
 
             // Execute hatch
             let res = execute_hatch(&mut deps.as_mut(), &env, "magotchi1").unwrap();
@@ -204,11 +207,15 @@ mod tests {
                 .unwrap();
             assert_that!(state.is_hatched()).is_true();
             assert_that!(state.is_dead(&env.block)).is_false();
+            assert_that!(state.death_time()).is_equal_to(env.block.time.plus_days(1));
             assert_that!(state.hatched_at())
                 .is_some()
                 .is_equal_to(env.block.time);
 
-            assert_that!(state.death_time()).is_equal_to(env.block.time.plus_days(1));
+            // at the same time, the health is 2, but one second later, it should be 1
+            assert_that!(state.health(&env.block, 10)).is_equal_to(2);
+            env.block.time = env.block.time.plus_seconds(1);
+            assert_that!(state.health(&env.block, 10)).is_equal_to(1);
         }
 
         #[test]
@@ -243,7 +250,7 @@ mod tests {
             let _ = execute_hatch(&mut deps.as_mut(), &env, "magotchi1").unwrap();
 
             // Execute feed. After hatch, the magotchi is unfed for 9 days.
-            let info = mock_info("feeder", &coins(9_000_000, "uluna"));
+            let info = mock_info("feeder", &coins(8_000_000, "uluna"));
             let res = execute_feed(&mut deps.as_mut(), &env, "magotchi1", &info.funds).unwrap();
 
             // Verify the response
@@ -340,7 +347,7 @@ mod tests {
 
             // Mock environment and message info
             let env = mock_env();
-            let info = mock_info("feeder", &coins(9_000_000, "uluna"));
+            let info = mock_info("feeder", &coins(8_000_000, "uluna"));
 
             // Hatch the magotchi first
             let _ = execute_hatch(&mut deps.as_mut(), &env, "magotchi1").unwrap();
@@ -368,7 +375,7 @@ mod tests {
     }
 
     mod reap {
-        use cw721_base::{InstantiateMsg};
+        use cw721_base::InstantiateMsg;
 
         use crate::{ExecuteMsg, CONTRACT_NAME};
         const SYMBOL: &str = "MAG";
@@ -428,7 +435,7 @@ mod tests {
             for &token in TEST_TOKENS.iter() {
                 let _ = execute_hatch(&mut deps.as_mut(), &env, token).unwrap();
                 let state = LIVE_STATES.load(&deps.storage, token.to_string()).unwrap();
-                let state = Gotchi::custom(
+                let state = Gotchi::custom_min_1sec(
                     state.hatched_at().unwrap().seconds() / (24 * 60 * 60),
                     env.block.time.plus_seconds(1).seconds() / (24 * 60 * 60),
                 );
@@ -465,7 +472,7 @@ mod tests {
             for &token in TEST_TOKENS[..2].iter() {
                 let _ = execute_hatch(&mut deps.as_mut(), &env, token).unwrap();
                 let state = LIVE_STATES.load(&deps.storage, token.to_string()).unwrap();
-                let state = Gotchi::custom(
+                let state = Gotchi::custom_min_1sec(
                     state.hatched_at().unwrap().seconds() / (24 * 60 * 60),
                     env.block.time.plus_seconds(1).seconds() / (24 * 60 * 60),
                 );
@@ -508,7 +515,7 @@ mod tests {
             for &token in TEST_TOKENS[..2].iter() {
                 let _ = execute_hatch(&mut deps.as_mut(), &env, token).unwrap();
                 let state = LIVE_STATES.load(&deps.storage, token.to_string()).unwrap();
-                let state = Gotchi::custom(
+                let state = Gotchi::custom_min_1sec(
                     state.hatched_at().unwrap().seconds() / (24 * 60 * 60),
                     env.block.time.plus_seconds(1).seconds() / (24 * 60 * 60),
                 );
@@ -549,7 +556,7 @@ mod tests {
             for &token in TEST_TOKENS.iter() {
                 let _ = execute_hatch(&mut deps.as_mut(), &env, token).unwrap();
                 let state = LIVE_STATES.load(&deps.storage, token.to_string()).unwrap();
-                let state = Gotchi::custom(
+                let state = Gotchi::custom_min_1sec(
                     state.hatched_at().unwrap().seconds() / (24 * 60 * 60),
                     env.block.time.plus_seconds(1).seconds() / (24 * 60 * 60),
                 );
@@ -572,13 +579,10 @@ mod tests {
     }
 
     mod mint {
-        
-
-        
 
         use super::*;
-        
-        use speculoos::{assert_that};
+
+        use speculoos::assert_that;
 
         #[test]
         fn test_execute_mint() {

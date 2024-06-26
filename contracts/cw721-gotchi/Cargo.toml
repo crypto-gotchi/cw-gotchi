@@ -47,3 +47,7 @@ speculoos = "0.11.0"
 [[bin]]
 name = "deploy"
 required-features = ["daemon-bin"]
+
+[[bin]]
+name = "mint_gotchi"
+required-features = ["daemon-bin"]

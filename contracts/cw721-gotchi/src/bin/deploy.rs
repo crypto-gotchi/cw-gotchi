@@ -1,3 +1,4 @@
+use anyhow::Error;
 use cw721_base::InstantiateMsg;
 use cw_orch::{anyhow, daemon::Daemon, prelude::*, tokio::runtime::Runtime};
 
@@ -8,15 +9,16 @@ fn main() -> anyhow::Result<()> {
     env_logger::init();
 
     let daemon = Daemon::builder().chain(NETWORK).build().unwrap();
+    let address = daemon.wallet().address()?;
 
     let contract = cw721_gotchi::interface::CwGotchi::new("cw721_gotchi", daemon);
-    let id = contract.upload()?;
+    contract.upload_if_needed()?;
 
     let init_msg = InstantiateMsg {
         name: "My NFTs".to_string(),
         symbol: "NFT".to_string(),
-        minter: Some("neutron1st52glkuvm2dymc5xzuynkfcvy907zfsltm4d0".to_string()),
-        withdraw_address: Some("neutron1st52glkuvm2dymc5xzuynkfcvy907zfsltm4d0".to_string()),
+        minter: Some(address.to_string()),
+        withdraw_address: Some(address.to_string()),
     };
 
     let response = contract.instantiate(&init_msg, None, Some(&[]))?;

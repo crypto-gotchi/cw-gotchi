@@ -33,11 +33,11 @@ pub enum MagotchiQueryExtension {
     Config {},
     /// Return the birthday of the magotchi
     #[returns(Timestamp)]
-    Birthday { token_id: String },
+    HatchedAt { token_id: String },
 
     /// Return the dying day of the magotchi
     #[returns(Timestamp)]
-    DyingDay { token_id: String },
+    DeathTime { token_id: String },
 
     /// Return if the magotchi is hatched
     #[returns(bool)]
@@ -45,7 +45,7 @@ pub enum MagotchiQueryExtension {
 
     /// Return the live state of the magotchi
     #[returns(Gotchi)]
-    LiveState { token_id: String },
+    GotchiState { token_id: String },
 }
 
 impl Default for MagotchiQueryExtension {
