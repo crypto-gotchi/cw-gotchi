@@ -15,8 +15,8 @@ fn main() -> anyhow::Result<()> {
     contract.upload_if_needed()?;
 
     let init_msg = InstantiateMsg {
-        name: "My NFTs".to_string(),
-        symbol: "NFT".to_string(),
+        name: "My Test Gotchis".to_string(),
+        symbol: "GOTCHI".to_string(),
         minter: Some(address.to_string()),
         withdraw_address: Some(address.to_string()),
     };

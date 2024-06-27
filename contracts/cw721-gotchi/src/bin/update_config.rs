@@ -17,14 +17,17 @@ fn main() -> anyhow::Result<()> {
     assert!(contract.latest_is_uploaded()?);
     assert!(contract.is_running_latest()?);
 
-    let mint_msg: ExecuteMsg = ExecuteMsg::Mint {
-        token_id: "token-3".to_string(),
-        owner: "neutron1st52glkuvm2dymc5xzuynkfcvy907zfsltm4d0".to_string(),
-        token_uri: Some(
-            "https://jollycontrarian.com/images/thumb/6/6c/Rickroll.jpg/640px-Rickroll.jpg"
-                .to_string(),
-        ),
-        extension: None,
+    let mint_msg: ExecuteMsg = ExecuteMsg::Extension {
+        msg: cw721_gotchi::msg::MagotchiExecuteExtension::UpdateConfig {
+            config: {
+                cw721_gotchi::state::PartialConfig {
+                    daily_feeding_cost: Some(vec![Coin::new(1, "untrn".to_string())]),
+                    max_unfed_days: None,
+                    feeding_cost_multiplier: Some(0),
+                    graveyard: None,
+                }
+            },
+        },
     };
 
     let res = contract.execute(&mint_msg, None)?;

@@ -51,3 +51,7 @@ required-features = ["daemon-bin"]
 [[bin]]
 name = "mint_gotchi"
 required-features = ["daemon-bin"]
+
+[[bin]]
+name = "update_config"
+required-features = ["daemon-bin"]
