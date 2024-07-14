@@ -1,10 +1,24 @@
+use cw721::{AllNftInfoResponse, TokensResponse};
 use cw721_base::msg::ExecuteMsgFns;
 use cw721_base::InstantiateMsg;
-use cw721_gotchi::msg::MagotchiExecuteExtensionFns;
-use cw721_gotchi::ExecuteMsg;
-use cw_orch::{anyhow, daemon::Daemon, prelude::*, tokio::runtime::Runtime};
+use cw721_gotchi::{msg::MagotchiExecuteExtensionFns, QueryMsg};
+use cw721_gotchi::{ExecuteMsg, Metadata};
+use cw_orch::{anyhow, core::serde_json, daemon::Daemon, prelude::*, tokio::runtime::Runtime};
 
 const NETWORK: ChainInfo = networks::PION_1;
+
+#[derive(Debug, Clone, serde::Deserialize)]
+struct GotchiJson {
+    token_id: String,
+    token_uri: String,
+    owner: String,
+    minted: bool,
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+struct GotchiJsons {
+    first_gotchis: Vec<GotchiJson>,
+}
 
 fn main() -> anyhow::Result<()> {
     dotenv::dotenv().ok();
@@ -17,13 +31,19 @@ fn main() -> anyhow::Result<()> {
     assert!(contract.latest_is_uploaded()?);
     assert!(contract.is_running_latest()?);
 
+    // read the json file first_gotchi.json with "first_gotchis": [ {token_id, token_uri, owner}]
+    let json_file = std::fs::read_to_string("first_gotchis.json")?;
+    let first_gotchis: GotchiJsons = serde_json::from_str(&json_file)?;
+
+    let index = 5;
+    let selected_gotchi = &first_gotchis.first_gotchis[index];
+
+    assert!(selected_gotchi.minted == false);
+
     let mint_msg: ExecuteMsg = ExecuteMsg::Mint {
-        token_id: "token-3".to_string(),
-        owner: "neutron1st52glkuvm2dymc5xzuynkfcvy907zfsltm4d0".to_string(),
-        token_uri: Some(
-            "https://jollycontrarian.com/images/thumb/6/6c/Rickroll.jpg/640px-Rickroll.jpg"
-                .to_string(),
-        ),
+        token_id: selected_gotchi.token_id.clone(),
+        owner: selected_gotchi.owner.clone(),
+        token_uri: Some(selected_gotchi.token_uri.clone()),
         extension: None,
     };
 

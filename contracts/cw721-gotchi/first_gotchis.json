@@ -1,0 +1,40 @@
+{
+    "first_gotchis": [
+        {
+            "token_id": "token-9",
+            "token_uri": "ipfs://QmPZX1pCXbuQFEXVp59vPSphLvbtM5FxnVFzQe2hXCZdmr/gotchi_0.webp",
+            "owner": "neutron1st52glkuvm2dymc5xzuynkfcvy907zfsltm4d0",
+            "minted": true
+        },
+        {
+            "token_id": "token-8",
+            "token_uri": "ipfs://QmPZX1pCXbuQFEXVp59vPSphLvbtM5FxnVFzQe2hXCZdmr/gotchi_1.webp",
+            "owner": "neutron1awudp06dnsvz829d8cpmuneeet20dyze5tg37s",
+            "minted": true
+        },
+        {
+            "token_id": "token-11",
+            "token_uri": "ipfs://QmPZX1pCXbuQFEXVp59vPSphLvbtM5FxnVFzQe2hXCZdmr/gotchi_2.webp",
+            "owner": "neutron1fn0cz3r7grgs7w6kg3qpr53sv9mcyuqxk9dp3t",
+            "minted": false
+        },
+        {
+            "token_id": "token-10",
+            "token_uri": "ipfs://QmPZX1pCXbuQFEXVp59vPSphLvbtM5FxnVFzQe2hXCZdmr/gotchi_3.webp",
+            "owner": "neutron1cpy2gpwc8lphzyczderwma2rt5nqdmvtyyl26f",
+            "minted": true
+        },
+        {
+            "token_id": "token-12",
+            "token_uri": "ipfs://QmPZX1pCXbuQFEXVp59vPSphLvbtM5FxnVFzQe2hXCZdmr/gotchi_4.webp",
+            "owner": "",
+            "minted": false
+        },
+        {
+            "token_id": "token-13",
+            "token_uri": "ipfs://QmPsxgpMyv4mR4ai6nDt7wh6ehRhmNkN9rhHWHrySEiqpP",
+            "owner": "neutron1drrp76svldzw43cs9jfdce9mfsgl4nzmvpaknv",
+            "minted": false
+        }
+    ]
+}
