@@ -15,7 +15,6 @@ use cw_utils::maybe_addr;
 
 use crate::msg::{MinterResponse, QueryMsg};
 use crate::state::{Approval, Cw721Contract, TokenInfo, WearableOwner, WearableOwnerError};
-use crate::ContractError;
 
 const DEFAULT_LIMIT: u32 = 10;
 const MAX_LIMIT: u32 = 1000;
@@ -196,8 +195,10 @@ where
     ) -> StdResult<TokensResponse> {
         let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize;
         let start = start_after.map(|s| Bound::ExclusiveRaw(s.into()));
-        let wearble_owner = WearableOwner::from_str(owner.as_str())?;
+        let wearble_owner = WearableOwner::from_str(owner.as_str())
+            .map_err(|e: WearableOwnerError| e.into_std())?;
 
+        // TODO: Check the logic of this function with regards to the gotchi owner
         let owner_addr = deps.api.addr_validate(&owner)?;
         let tokens: Vec<String> = self
             .tokens

@@ -2,6 +2,7 @@ use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::any::type_name;
+use std::fmt::{self, Display};
 use std::marker::PhantomData;
 use thiserror::Error;
 
@@ -19,7 +20,7 @@ pub enum WearableOwner {
 }
 impl<'a> Prefixer<'a> for WearableOwner {
     fn prefix(&self) -> Vec<Key> {
-        vec![Key::Ref(self.key())]
+        self.key()
     }
 }
 
@@ -37,6 +38,16 @@ pub enum WearableOwnerError {
 impl WearableOwnerError {
     pub fn into_std(self) -> StdError {
         StdError::generic_err(self.to_string())
+    }
+}
+
+impl Display for WearableOwner {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Implement the display logic for WearableOwner here
+        // For example, you can use the `f.write_str()` method to write a string representation of the owner to the formatter.
+        // You can access the fields of the WearableOwner struct using `self.field_name`
+        // Replace the code below with your implementation
+        f.write_str("Implement the display logic for WearableOwner here")
     }
 }
 
