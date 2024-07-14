@@ -18,6 +18,8 @@ pub struct Gotchi {
     death_time: Timestamp,
 }
 
+// TODO: Add the wearables traits to the Config struct this should include each slot. See figjam for more high level impl.
+
 impl Gotchi {
     pub fn new() -> Self {
         Self {
